@@ -52,7 +52,7 @@ const listBlogCtrl = async (req, res) => {
       })
     );
 
-    return res.status(201).json({
+    return res.status(401).json({
       success: true,
       message: "blog list successfully",
       data: {

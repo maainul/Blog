@@ -1,4 +1,4 @@
-export const handleApiError = (error) => {
+const handleApiError = (error) => {
   let message = "An unexpected error occurred. Please try again later.";
   if (error.response) {
     switch (error.response.status) {
@@ -26,3 +26,5 @@ export const handleApiError = (error) => {
   console.error("API Error :", error);
   return { error: true, message };
 };
+
+export default handleApiError

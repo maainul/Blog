@@ -4,11 +4,14 @@ import BlogList from "./BlogList";
 import SkeletonCard from "../../components/Skeleton/SkeletonCard";
 import Error from "../../components/Error";
 import useFetch from "../../hooks/useFetch";
+import productService from "../../services/blogServices"
+
 
 const Blogs = () => {
 
-    const { data, loading, error } = useFetch("http://localhost:8081/blogs")
+    const { data, loading, error } = useFetch(productService.getBlogList)
 
+    console.log("==>",error)
     return (
         <>
             <div className="container mx-auto bg-gray-50">
