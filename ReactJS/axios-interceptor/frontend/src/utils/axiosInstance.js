@@ -5,7 +5,7 @@ import { toast } from "react-toastify"
 import ERROR_MESSAGE from './../config/errorMessages';
 
 const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_APP_API_BASE_URL || "http://localhost:8081/"
+    baseURL: import.meta.env.VITE_BASE_URL || "http://localhost:8081/"
 });
 
 axiosInstance.interceptors.response.use(

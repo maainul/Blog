@@ -20,7 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static("uploads")); // Serve uploaded images
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:4173"],
+    origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:4173"],
   })
 );
 const PORT = 8081;
