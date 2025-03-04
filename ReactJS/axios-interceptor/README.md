@@ -177,3 +177,238 @@ axiosInstance.interceptors.response.use(
 
 export default axiosInstance
 ```
+---
+
+### What is a Memory Leak in Your Blog Project?
+In your **blog application**, you're fetching blogs from the backend using React.
+
+Imagine this scenario:
+1. You have a **BlogList** page that fetches all blogs.
+2. You navigate to the **BlogList** page — the API request is sent, and blogs are loading.
+3. Before the API response comes back, you navigate to another page (like the **Dashboard** or **BlogDetails** page).
+4. Even though the **BlogList** component is unmounted, the API request is still running.
+5. When the API finally responds, React will **try to update the state** of the unmounted component.
+6. But since the component is no longer mounted, React throws a **memory leak warning** like this:
+
+```
+Warning: Can't perform a React state update on an unmounted component.
+```
+
+---
+
+### Why Does This Happen?
+✅ React always **remembers the API request** — but if the component is unmounted before the request completes, it still tries to update the state.
+
+---
+
+### How This Happens in Your Blog App
+Here's what your code might look like:
+```tsx
+import { useEffect, useState } from "react";
+import axios from "axios";
+
+function BlogList() {
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios.get("/api/blogs").then((res) => {
+      setBlogs(res.data);
+      setLoading(false);
+    });
+
+    // ❌ No cleanup => Memory Leak happens here
+  }, []);
+
+  return (
+    <div>
+      {loading ? <p>Loading...</p> : blogs.map((blog) => <h3 key={blog._id}>{blog.title}</h3>)}
+    </div>
+  );
+}
+```
+
+---
+
+### How This Causes Memory Leak 🔥
+If you navigate away before the API request completes, the component **tries to setBlogs()** on an **unmounted component**.
+
+React will show the warning:
+```
+Warning: Can't perform a React state update on an unmounted component.
+```
+---
+
+
+
+### Final Version (100% Memory Leak Proof 🔥):
+```tsx
+import { useEffect, useState } from "react";
+
+const useFetch = (apiFunction, params = []) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    setLoading(true);
+    setError(null);
+
+    const fetchData = async () => {
+      try {
+        const result = await apiFunction(...params, { signal }); // ✅ Pass signal here
+        setData(result);
+      } catch (error) {
+        if (error.name !== "CanceledError") {
+          setError(error.message);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      controller.abort(); // ✅ Cancel API request when component unmounts
+    };
+  }, [apiFunction, ...params]);
+
+  return { data, loading, error };
+};
+
+export default useFetch;
+```
+
+---
+
+### How to Use It in Your Blog Project 🚀
+```tsx
+import { useFetch } from "./useFetch";
+import { getAllBlogs } from "../api/blogApi"; // Your API function
+
+const BlogList = () => {
+  const { data: blogs, loading, error } = useFetch(getAllBlogs, []);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
+
+  return (
+    <div>
+      {blogs.map((blog) => (
+        <h3 key={blog._id}>{blog.title}</h3>
+      ))}
+    </div>
+  );
+};
+```
+
+---
+
+### This Way:
+| Feature             | Status |
+| ------------------- | ------ |
+| Memory Leak Proof ✅ | 🔥      |
+| API Reusability     | ✅      |
+| Abort Requests      | ✅      |
+| Clean Code          | ✅      |
+| Error Handling      | ✅      |
+
+---
+
+
+---
+
+## 🔥 How I Built a Custom `useFetch` Hook to Prevent Memory Leaks in React
+As a developer, one of the most common issues when fetching data in React is **memory leaks**.
+
+Recently, while building my **Blog Application** 📄, I created a **reusable `useFetch` custom hook** to fetch API data without memory leaks using **AbortController**.
+
+### Problem 🔍
+When fetching data inside **`useEffect`**, if the component unmounts before the API request completes, React still tries to update the component state — causing **memory leaks**.
+
+Here's the warning we all hate seeing:
+```bash
+Warning: Can't perform a React state update on an unmounted component.
+```
+
+---
+
+### How I Fixed It ✅
+I created a custom hook that:
+- Automatically cancels API requests using **AbortController**.
+- Supports dynamic API calls with parameters.
+- Handles **loading** and **error** states.
+
+---
+
+### Code Implementation 💪
+```tsx
+import { useEffect, useState } from "react";
+
+const useFetch = (apiFunction, params = []) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    setLoading(true);
+    setError(null);
+
+    const fetchData = async () => {
+      try {
+        const result = await apiFunction(...params, { signal });
+        setData(result);
+      } catch (error) {
+        if (error.name !== "CanceledError") {
+          setError(error.message);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      controller.abort(); // ✅ Cancel API request when component unmounts
+    };
+  }, [apiFunction, ...params]);
+
+  return { data, loading, error };
+};
+
+export default useFetch;
+```
+---
+
+### How to Use This Hook
+```tsx
+const { data: blogs, loading, error } = useFetch(getAllBlogs, []);
+
+if (loading) return <p>Loading...</p>;
+if (error) return <p>{error}</p>;
+
+return blogs.map((blog) => <h3 key={blog._id}>{blog.title}</h3>);
+```
+
+---
+
+### 🔑 What I Learned:
+✅ How to prevent memory leaks with **AbortController**  
+✅ Clean and reusable **custom hooks**  
+✅ How to optimize performance in React applications  
+
+---
+
+### If you're facing memory leaks in your React projects, give this a try! 🔥  
+I'd love to hear your feedback or suggestions.  
+Let's connect! 🔗 #ReactJS #CustomHooks #WebDevelopment #CleanCode #MemoryLeaks #FrontendOptimization
+
+---
